@@ -16,21 +16,18 @@ async function predictGenre() {
 
     try {
 
-        // CAMBIA ESTA URL POR LA DE RENDER
-        const response = await fetch("https://movie-genre-classifier-api.onrender.com/predict"), {
-
-            method: "POST",
-
-            headers: {
-                "Content-Type": "application/json"
-            },
-
-            body: JSON.stringify({
-                title,
-                plot,
-                year
-            })
-        });
+  
+        const response = await fetch("https://movie-genre-classifier-api.onrender.com/predict", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+        title,
+        plot,
+        year
+    })
+});
 
         const data = await response.json();
 
