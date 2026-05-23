@@ -56,13 +56,11 @@ async function predictGenre() {
         resultsDiv.innerHTML = html;
 
     } catch (error) {
-
-        resultsDiv.innerHTML = `
-            <p style="color:red;">
-                Error connecting to API
-            </p>
-        `;
-
-        console.error(error);
-    }
+    console.error("FULL ERROR:", error);
+    resultsDiv.innerHTML = `
+        <p style="color:red;">
+            ${error.message}
+        </p>
+    `;
+}
 }
