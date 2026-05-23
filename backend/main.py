@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 import numpy as np
@@ -13,6 +14,19 @@ from nltk.stem import WordNetLemmatizer
 from scipy.sparse import hstack, csr_matrix
 
 
+app = FastAPI(
+    title="Movie Genre Classifier API",
+    description="Predict movie genres using title and optional plot",
+    version="2.0.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 nltk.download('stopwords')
 nltk.download('wordnet')
