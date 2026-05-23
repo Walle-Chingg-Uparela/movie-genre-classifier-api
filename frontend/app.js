@@ -17,7 +17,7 @@ async function predictGenre() {
     try {
 
         // CAMBIA ESTA URL POR LA DE RENDER
-        const response = await fetch("http://127.0.0.1:8000/predict", {
+        const response = await fetch("https://movie-genre-classifier-api.onrender.com/predict", {
 
             method: "POST",
 
