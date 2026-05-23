@@ -13,45 +13,44 @@ from nltk.stem import WordNetLemmatizer
 
 from scipy.sparse import hstack, csr_matrix
 
-
+# =========================
+# FASTAPI APP (SOLO UNA VEZ)
+# =========================
 app = FastAPI(
     title="Movie Genre Classifier API",
     description="Predict movie genres using title and optional plot",
     version="2.0.0"
 )
 
+# =========================
+# CORS (IMPORTANTE)
+# =========================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # luego puedes restringirlo
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-nltk.download('stopwords')
-nltk.download('wordnet')
+# =========================
+# NLTK (mejor modo seguro)
+# =========================
+nltk.download('stopwords', quiet=True)
+nltk.download('wordnet', quiet=True)
 
-
+# =========================
+# MODELOS
+# =========================
 model = joblib.load('model.pkl')
-
 vect_plot = joblib.load('vectorizer_plot.pkl')
-
 vect_title = joblib.load('vectorizer_title.pkl')
-
 scaler = joblib.load('scaler.pkl')
-
 mlb = joblib.load('mlb.pkl')
 
-
-
-app = FastAPI(
-    title="Movie Genre Classifier API",
-    description="Predict movie genres using title and optional plot",
-    version="2.0.0"
-)
-
-
-
+# =========================
+# NLP SETUP
+# =========================
 lemmatizer = WordNetLemmatizer()
 
 extra_stop_words = [
@@ -65,14 +64,14 @@ extra_stop_words = [
 
 my_stop_words = set(stopwords.words('english')).union(extra_stop_words)
 
-
+# =========================
+# PREPROCESSING
+# =========================
 def clean_text(text):
-
     if pd.isna(text):
         return ""
 
     text = str(text).lower()
-
     text = re.sub(r'[^a-z\s]', '', text)
 
     words = text.split()
@@ -85,15 +84,12 @@ def clean_text(text):
 
     return ' '.join(words)
 
-
-
 def create_features(title, plot, year):
 
     title_clean = clean_text(title)
-
     plot_clean = clean_text(plot)
 
-    features = {
+    return {
         "title_clean": title_clean,
         "plot_clean": plot_clean,
         "plot_len": len(plot_clean),
@@ -103,59 +99,36 @@ def create_features(title, plot, year):
         "year_norm": (year - 1900) / (2025 - 1900)
     }
 
-    return features
-
-
-
+# =========================
+# REQUEST MODEL
+# =========================
 class MovieRequest(BaseModel):
-
     title: str
-
     plot: str = ""
-
     year: int = 2024
 
-
-
+# =========================
+# ROUTES
+# =========================
 @app.get("/")
-
 def home():
-
-    return {
-        "message": "Movie Genre Classifier API is running successfully"
-    }
-
-
+    return {"message": "Movie Genre Classifier API is running successfully"}
 
 @app.get("/health")
-
 def health():
-
-    return {
-        "status": "ok"
-    }
-
-
+    return {"status": "ok"}
 
 @app.post("/predict")
-
 def predict(movie: MovieRequest):
 
-
     features = create_features(
-        title=movie.title,
-        plot=movie.plot,
-        year=movie.year
+        movie.title,
+        movie.plot,
+        movie.year
     )
 
-    
-
     X_plot = vect_plot.transform([features['plot_clean']])
-
     X_title = vect_title.transform([features['title_clean']])
-
-
-
 
     numeric_features = np.array([[
         features['plot_len'],
@@ -167,40 +140,26 @@ def predict(movie: MovieRequest):
 
     X_num = scaler.transform(numeric_features)
 
-
     X_full = hstack([
         X_plot,
         X_title,
         csr_matrix(X_num)
     ])
 
- 
-
     probabilities = model.predict_proba(X_full)[0]
 
-   
+    predictions = {
+        genre: round(float(prob), 4)
+        for genre, prob in zip(mlb.classes_, probabilities)
+    }
 
-    predictions = {}
-
-    for genre, probability in zip(mlb.classes_, probabilities):
-
-        predictions[genre] = round(float(probability), 4)
-
-
-
-    predictions = dict(
-        sorted(
-            predictions.items(),
-            key=lambda item: item[1],
-            reverse=True
-        )
-    )
-
-
+    predictions = dict(sorted(
+        predictions.items(),
+        key=lambda x: x[1],
+        reverse=True
+    ))
 
     top_genres = list(predictions.items())[:5]
-
-
 
     return {
         "movie_title": movie.title,
